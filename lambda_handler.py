@@ -1,5 +1,7 @@
+from models.ScrapingCapacity import ScrapingCapacity
+from autoscaling.ScrapingCapacity import ScrapingCapacity
+from autoscaling.functions import get_required_scraping_capacity, get_current_scraping_capacity, set_autoscaling_capacity
 from aws_client import get_distributions_count
-from functions import get_scraping_capacity, get_scraping_capacity_required
 from config import CAPACITY_PER_DISTRIBUTION
 import boto3
 
@@ -11,32 +13,36 @@ def lambda_function():
     # distributions_count = get_distributions_count()
     # current_scraping_capacity = distributions_count * CAPACITY_PER_DISTRIBUTION
 
-    distributions_count = 4
+    current_capacity: ScrapingCapacity = get_current_scraping_capacity()
 
-    current_scraping_capacity = distributions_count * CAPACITY_PER_DISTRIBUTION
+    required_capacity: ScrapingCapacity = get_required_scraping_capacity()
 
-    required_capacity = 23092
+    print(
+        f'Current scraping capcity: SCRAPER({current_capacity.scraper}) | SPIDER({current_capacity.spider}) ')
 
-    print(f'Current scraping capcity: {current_scraping_capacity}')
-    print(f'Required capacity: {required_capacity}')
+    print(
+        f'Required capacity: SCRAPER({required_capacity.scraper}) | SPIDER({required_capacity.spider})')
 
-    if required_capacity < current_scraping_capacity:
+    # Adjust capacity for SCRAPER
+    current_scraper_distributions = int(
+        current_capacity.scraper / CAPACITY_PER_DISTRIBUTION)
+    required_scraper_distributions = int(
+        required_capacity.scraper / CAPACITY_PER_DISTRIBUTION)
+
+    if required_capacity.scraper < current_capacity.scraper:
+        # SCALE DOWN
         # Assert that we can scale down
-        current_distributions = int(
-            current_scraping_capacity / CAPACITY_PER_DISTRIBUTION)
-        if current_distributions <= 1:
+        if current_scraper_distributions <= 1 or required_scraper_distributions == current_scraper_distributions:
             print('No action should be taken')
             return
-    elif required_capacity > current_scraping_capacity:
-        # Assert that we can scale down
+        
+    elif required_capacity.scraper > current_capacity.scraper:
+        # SCALE UP
+        # Assert that we can perform down-scale
 
-        required_distributions = int(
-            required_capacity / CAPACITY_PER_DISTRIBUTION)
-
-        if distributions_count < required_distributions:
-
+        if current_scraper_distributions < required_scraper_distributions:
             print(
-                f'Increasing distirbution capacity from {distributions_count} to {required_distributions}')
+                f'Scaling SCRAPER capacity from {current_scraper_distributions} to {required_scraper_distributions}')
             return
         print('No action should be taken')
 

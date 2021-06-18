@@ -1,9 +1,19 @@
-from aws_client import get_autoscaling, get_ec2
+from typing_extensions import Required
+
+from pkg_resources import require
+from autoscaling.ScrapingCapacity import ScrapingCapacity
+from aws_client import get_autoscaling, get_ec2, get_dynamodb
+from config import DOMAIN_RATE_LIMIT
 from autoscaling.CapacityScalingInstructions import CapacityScalingInstructions
 from autoscaling.groups import AutoScalingGroup
 from models.ScrapingCapacity import ScrapingCapacity
 import boto3
 from config import AUTO_SCALING_GROUPS, aws_access_key_id, aws_secret_access_key
+
+
+def get_current_scraping_capacity():
+    capacity = ScrapingCapacity()
+    pass
 
 
 def create_ec2_instance(autoscaling_group, instances_count, spot=True):
@@ -82,7 +92,7 @@ def get_instances_capacity_target(autoscaling_group):
             return i['DesiredCapacity']
 
 
-def set_capacity(scaling_instructions: CapacityScalingInstructions):
+def set_autoscaling_capacity(scaling_instructions: CapacityScalingInstructions):
 
     #instances = get_live_instances(scaling_instructions.autoscaling_group)
 
@@ -99,3 +109,55 @@ def set_capacity(scaling_instructions: CapacityScalingInstructions):
     )
 
     print(result)
+
+
+def get_required_scraping_capacity() -> ScrapingCapacity:
+
+    # Get all crawler threads that need to be processed
+    dynamo = get_dynamodb()
+
+    table = dynamo.Table('crawler_threads')
+
+    data = table.query(
+        IndexName='is_completed-index',
+        KeyConditionExpression="#is_completed = :is_completed",
+        ExpressionAttributeNames={
+            "#is_completed": "is_completed"
+        },
+        ExpressionAttributeValues={
+            ":is_completed": 0
+        }
+
+    )
+
+    # domain: count
+    # Applies rate limiter filtering
+    per_domain_capacity = {
+
+    }
+
+    required_scraping_capacity = ScrapingCapacity()
+
+    for crawler_thread in data['Items']:
+        domain = crawler_thread['domain']
+
+        if not domain in per_domain_capacity:
+            per_domain_capacity[domain] = 1
+            if crawler_thread['crawler_engine'] == 'SCRAPER':
+                required_scraping_capacity.scraper += 1
+            elif crawler_thread['crawler_engine'] == 'SPIDER':
+                required_scraping_capacity.spider += 1
+            continue
+
+        current_val = per_domain_capacity[domain]
+        if current_val >= DOMAIN_RATE_LIMIT:
+            # Domain already saturated
+            continue
+
+        per_domain_capacity[domain] += 1
+        if crawler_thread['crawler_engine'] == 'SCRAPER':
+            required_scraping_capacity.scraper += 1
+        elif crawler_thread['crawler_engine'] == 'SPIDER':
+            required_scraping_capacity.spider += 1
+
+    return required_scraping_capacity
