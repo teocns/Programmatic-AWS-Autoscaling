@@ -1,30 +1,17 @@
-DOMAIN_RATE_LIMIT = 5
+
 CAPACITY_PER_DISTRIBUTION = 200
 
 
 AUTO_SCALING_GROUPS = {
     'SCRAPER': {
-        'codename': "",
-        # 'instance_creation_paramters': {
-        #     'InstanceType': 'c5.large',
-        #     'SecurityGroupIds': ['sg-05dec40ce8b91a8c8'],
-        #     'InstanceMarketOptions': {
-        #         'MarketType': 'spot',
-        #         'SpotOptions': {
-        #             'MaxPrice': 'string',
-        #             'SpotInstanceType': 'one-time' | 'persistent',
-        #             'InstanceInterruptionBehavior': 'hibernate' | 'stop' | 'terminate'
-        #         }
-        #     },
-        # }
-
-
+        'codename': "awseb-e-mtrrs34pb4-stack-AWSEBAutoScalingGroup-CRXTMF7SZFPD",
     },
-    'SPIDER': {
-        'codename': ''
+    "SPIDER": {
+        'codename': "awseb-e-iytce6es6v-stack-AWSEBAutoScalingGroup-BAURTOTXER0A"
     },
-    'RATE_LIMITER': {
-        'codename': 'awseb-e-dnpwccp42g-stack-AWSEBAutoScalingGroup-YP7HYN21XF1D'
+    
+    'PROCESSOR': {
+        'codename': 'awseb-e-bgv57pjazv-stack-AWSEBAutoScalingGroup-1J1B4S5WF92O8'
     }
 }
 
@@ -40,7 +27,7 @@ ENABLE_DEBUG_NOFORWARD = True
 ############################
 
 
-redis_endpoint = "redis://redis-endpoint.com"
+redis_endpoint = "redis://crawler-threads-processing.gslcnb.0001.euw3.cache.amazonaws.com"
 
 redis_pass = "USER"
 redis_user = "PASS"

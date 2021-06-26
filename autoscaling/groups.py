@@ -5,10 +5,12 @@ from config import AUTO_SCALING_GROUPS
 class AutoScalingGroup:
     SCRAPER = 'SCRAPER'
     SPIDER = 'SPIDER'
-    RATE_LIMITER = 'RATE_LIMITER'
-    PROCESSING = 'PROCESSING'
+    PROCESSOR = 'PROCESSOR'
 
-    def get_auto_scaling_group_name(auto_scaling_group: 'AutoScalingGroup'):
-
+    def get_auto_scaling_group_codename(auto_scaling_group: 'AutoScalingGroup'):
         return AUTO_SCALING_GROUPS[auto_scaling_group]['codename']
-        pass
+
+    def get_by_auto_scaling_group_codename(codename):
+        for name in AUTO_SCALING_GROUPS:
+            if AUTO_SCALING_GROUPS[name]['codename'] == codename:
+                return name

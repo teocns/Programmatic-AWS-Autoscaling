@@ -1,50 +1,53 @@
-from models.ScrapingCapacity import ScrapingCapacity
-from autoscaling.ScrapingCapacity import ScrapingCapacity
-from autoscaling.functions import get_required_scraping_capacity, get_current_scraping_capacity, set_autoscaling_capacity
-from aws_client import get_distributions_count
-from config import CAPACITY_PER_DISTRIBUTION
+from redis_cluster.functions import get_capacity
+from functions import get_scaling_instructions_for_processor, get_scaling_instructions_for_scraper, get_scaling_instructions_for_spider
+from autoscaling.groups import AutoScalingGroup
+from autoscaling.CapacityScalingInstructions import CapacityScalingInstructions
+from autoscaling.ScrapingCapacity import AutoscalingDistributionsCapacity
+from autoscaling.functions import  get_current_distributions_capacity, set_autoscaling_desired_distributions_capacity
 import boto3
 
 
-# Get amount of distributions
+def lambda_function(context, event):
+    # View sample_event.json for the content of "context"
 
 
-def lambda_function():
-    # distributions_count = get_distributions_count()
-    # current_scraping_capacity = distributions_count * CAPACITY_PER_DISTRIBUTION
+    required_scraping_capacity = get_capacity()
 
-    current_capacity: ScrapingCapacity = get_current_scraping_capacity()
+    
+    current_scraping_capacity: AutoscalingDistributionsCapacity = get_current_distributions_capacity()
 
-    required_capacity: ScrapingCapacity = get_required_scraping_capacity()
+    
+    print(
+        f'Current scraping capcity: SCRAPER({current_scraping_capacity.scraper}) | SPIDER({current_scraping_capacity.spider}) | PROCESSOR({current_scraping_capacity.processor})')
 
     print(
-        f'Current scraping capcity: SCRAPER({current_capacity.scraper}) | SPIDER({current_capacity.spider}) ')
+        f'Required capacity: SCRAPER({required_scraping_capacity.scraper}) | SPIDER({required_scraping_capacity.spider})')
 
-    print(
-        f'Required capacity: SCRAPER({required_capacity.scraper}) | SPIDER({required_capacity.spider})')
+    scaling_instructions_scraper = get_scaling_instructions_for_scraper(
+        current_scraping_capacity, required_scraping_capacity)
 
-    # Adjust capacity for SCRAPER
-    current_scraper_distributions = int(
-        current_capacity.scraper / CAPACITY_PER_DISTRIBUTION)
-    required_scraper_distributions = int(
-        required_capacity.scraper / CAPACITY_PER_DISTRIBUTION)
+    scaling_instructions_spider = get_scaling_instructions_for_spider(
+        current_scraping_capacity, required_scraping_capacity)
 
-    if required_capacity.scraper < current_capacity.scraper:
-        # SCALE DOWN
-        # Assert that we can scale down
-        if current_scraper_distributions <= 1 or required_scraper_distributions == current_scraper_distributions:
-            print('No action should be taken')
-            return
-        
-    elif required_capacity.scraper > current_capacity.scraper:
-        # SCALE UP
-        # Assert that we can perform down-scale
+    scaling_instructions_processor = get_scaling_instructions_for_processor(
+        current_scraping_capacity, required_scraping_capacity)
 
-        if current_scraper_distributions < required_scraper_distributions:
-            print(
-                f'Scaling SCRAPER capacity from {current_scraper_distributions} to {required_scraper_distributions}')
-            return
-        print('No action should be taken')
+    # Scale scraper
+    if scaling_instructions_scraper:
+        set_autoscaling_desired_distributions_capacity(
+            AutoScalingGroup.get_auto_scaling_group_codename(AutoScalingGroup.SCRAPER),
+            scaling_instructions_scraper)
+
+    if scaling_instructions_spider:
+        set_autoscaling_desired_distributions_capacity(
+            AutoScalingGroup.get_auto_scaling_group_codename(AutoScalingGroup.SPIDER),
+            scaling_instructions_spider)
+
+    if scaling_instructions_processor:
+        set_autoscaling_desired_distributions_capacity(
+            AutoScalingGroup.get_auto_scaling_group_codename(AutoScalingGroup.PROCESSOR),
+            scaling_instructions_processor)
 
 
-lambda_function()
+
+lambda_function(None,None)

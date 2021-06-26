@@ -1,14 +1,10 @@
 class CapacityScalingInstructions:
 
-    autoscaling_group: str
+    autoscaling_group_aws_codename: str
 
     # Amount of instances
-    capacity: int
+    distributions: int
 
-    def __init__(self, autoscaling_group, capcity) -> None:
-        self.autoscaling_group = autoscaling_group
-        self.capacity = capcity
-
-
-
-
+    def __init__(self, autoscaling_group_aws_codename, distributions) -> None:
+        self.autoscaling_group_aws_codename = autoscaling_group_aws_codename
+        self.distributions = distributions

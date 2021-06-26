@@ -60,7 +60,7 @@ class RedisCluster:
         self.connection = None
         try:
             self.connection = redis.Redis.from_url(
-                url=redis_endpoint, port=6379)
+                url=redis_endpoint, port=6379,decode_responses=True,encoding='utf-8')
             self.connection.ping()
             self.connection_name = get_nickname()
             print(f'[REDIS] Connection {self.connection_name} created')
