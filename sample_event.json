@@ -1,9 +1,0 @@
-{
-    "crawler_threads":{
-        "crawler_engines": {
-            "SPIDER": 2938,
-            "SCRAPER": 2938
-        },
-        "total": 10239
-    }
-}
