@@ -50,4 +50,3 @@ def lambda_function(context, event):
 
 
 
-lambda_function(None,None)
