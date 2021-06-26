@@ -49,4 +49,3 @@ def lambda_handler(context, event):
             scaling_instructions_processor)
 
 
-
